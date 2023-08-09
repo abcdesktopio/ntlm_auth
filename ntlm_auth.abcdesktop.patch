@@ -1,0 +1,577 @@
+--- ntlm_auth.c	2023-08-07 12:34:22.000000000 +0200
++++ ntlm_auth.abcdesktop.c	2023-08-09 11:51:56.159059756 +0200
+@@ -165,10 +165,13 @@
+ 	{ NUM_HELPER_MODES, NULL, NULL}
+ };
+ 
+-const char *opt_username;
+-const char *opt_domain;
+-const char *opt_workstation;
+-const char *opt_password;
++
++#define DEBUG_READ_CREDENTIALS 1
++const char *opt_username=NULL;
++const char *opt_domain=NULL;
++const char *opt_workstation=NULL;
++const char *opt_password=NULL;
++
+ static DATA_BLOB opt_challenge;
+ static DATA_BLOB opt_lm_response;
+ static DATA_BLOB opt_nt_response;
+@@ -574,14 +577,10 @@
+ 	memcpy(request.data.auth_crap.chal, challenge->data, MIN(challenge->length, 8));
+ 
+ 	if (lm_response && lm_response->length) {
+-		size_t capped_lm_response_len = MIN(
+-			lm_response->length,
+-			sizeof(request.data.auth_crap.lm_resp));
+-
+ 		memcpy(request.data.auth_crap.lm_resp,
+ 		       lm_response->data,
+-		       capped_lm_response_len);
+-		request.data.auth_crap.lm_resp_len = capped_lm_response_len;
++		       MIN(lm_response->length, sizeof(request.data.auth_crap.lm_resp)));
++		request.data.auth_crap.lm_resp_len = lm_response->length;
+ 	}
+ 
+ 	if (nt_response && nt_response->length) {
+@@ -1270,6 +1269,7 @@
+ 
+ 	struct auth4_context *auth4_context;
+ 
++	DEBUG(10, ("trace ntlm_auth_prepare_gensec_server\n"));
+ 	tmp_ctx = talloc_new(mem_ctx);
+ 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
+ 
+@@ -1302,6 +1302,7 @@
+ 		gensec_settings->server_netbios_domain = get_winbind_domain();
+ 	}
+ 
++	DEBUG(10, ("server_netbios_name=%s server_netbios_domain=%s\n", gensec_settings->server_netbios_name, gensec_settings->server_netbios_domain));
+ 	gensec_settings->server_dns_domain = strlower_talloc(gensec_settings,
+ 							     get_mydnsdomname(talloc_tos()));
+ 	gensec_settings->server_dns_name = strlower_talloc(gensec_settings,
+@@ -1454,6 +1455,7 @@
+ 
+ 	TALLOC_CTX *mem_ctx;
+ 
++	DEBUG(10, ("trace manage_gensec_request\n"));
+ 	mem_ctx = talloc_named(NULL, 0, "manage_gensec_request internal mem_ctx");
+ 	if (mem_ctx == NULL) {
+ 		printf("BH No Memory\n");
+@@ -1461,14 +1463,21 @@
+ 	}
+ 
+ 	if (*private1) {
++		DEBUG(10, ("*private1 exists\n"));
+ 		state = talloc_get_type(*private1, struct gensec_ntlm_state);
+ 		if (state == NULL) {
++			DEBUG(10, ("trace state is null\n"));
+ 			DBG_WARNING("*private1 is of type %s\n",
+ 				    talloc_get_name(*private1));
+ 			printf("BH *private1 is of type %s\n",
+ 			       talloc_get_name(*private1));
+ 			exit(1);
+ 		}
++		else
++		{
++			DEBUG(10, ("state is loaded from *private1\n"));
++		}
++
+ 	} else {
+ 		state = talloc_zero(NULL, struct gensec_ntlm_state);
+ 		if (!state) {
+@@ -1487,7 +1496,7 @@
+ 		talloc_free(mem_ctx);
+ 		return;
+ 	}
+-
++	
+ 	if (strlen(buf) > 3) {
+ 		if(strncmp(buf, "SF ", 3) == 0) {
+ 			DEBUG(10, ("Setting flags to negotiate\n"));
+@@ -1503,6 +1512,7 @@
+ 	}
+ 
+ 	if (strncmp(buf, "YR", 2) == 0) {
++		DEBUG(10, ("YR\n"));
+ 		if (state->gensec_state) {
+ 			talloc_free(state->gensec_state);
+ 			state->gensec_state = NULL;
+@@ -1526,6 +1536,7 @@
+ 		return;
+ 	}
+ 
++
+ 	/* setup gensec */
+ 	if (!(state->gensec_state)) {
+ 		switch (stdio_helper_mode) {
+@@ -1535,13 +1546,16 @@
+ 			 * NTLMSSP_CLIENT_1 for now.
+ 			 */
+ 			use_cached_creds = false;
++			DEBUG(10, ("trace GSS_SPNEGO_CLIENT\n"));
+ 			FALL_THROUGH;
++
+ 		case NTLMSSP_CLIENT_1:
+ 			/* setup the client side */
+-
++			DEBUG(10, ("trace NTLMSSP_CLIENT_1\n"));
+ 			if (state->set_password != NULL) {
+ 				use_cached_creds = false;
+ 			}
++                        // use_cached_creds = false;
+ 
+ 			if (use_cached_creds) {
+ 				struct wbcCredentialCacheParams params;
+@@ -1559,9 +1573,12 @@
+ 								&error);
+ 				wbcFreeMemory(error);
+ 				if (!WBC_ERROR_IS_OK(wbc_status)) {
++					DEBUG(10, ("use_cached_creds is false\n"));
+ 					use_cached_creds = false;
+ 				}
+ 				wbcFreeMemory(info);
++			} else {
++			   DEBUG(10, ("use_cached_creds is false\n"));
+ 			}
+ 
+ 			nt_status = ntlm_auth_prepare_gensec_client(state, lp_ctx,
+@@ -1576,25 +1593,27 @@
+ 			creds = cli_credentials_init(state->gensec_state);
+ 			cli_credentials_set_conf(creds, lp_ctx);
+ 			if (opt_username) {
++				DEBUG(10, ("cli_credentials_set_username [%s]\n", opt_username ));
+ 				cli_credentials_set_username(creds, opt_username, CRED_SPECIFIED);
+ 			}
+ 			if (opt_domain) {
++				DEBUG(10, ("cli_credentials_set_domain [%s]\n", opt_domain ));
+ 				cli_credentials_set_domain(creds, opt_domain, CRED_SPECIFIED);
+ 			}
+-			if (use_cached_creds) {
+-				gensec_want_feature(state->gensec_state,
+-						    GENSEC_FEATURE_NTLM_CCACHE);
+-			} else if (state->set_password) {
+-				cli_credentials_set_password(creds, state->set_password, CRED_SPECIFIED);
+-			} else {
+-				cli_credentials_set_password_callback(creds, get_password);
++			if (opt_password) {
++				DEBUG(10, ("cli_credentials_set_password [%s]\n", opt_password ));
++                                cli_credentials_set_password(creds, opt_password, CRED_SPECIFIED);
+ 			}
++
++			gensec_want_feature(state->gensec_state, GENSEC_FEATURE_NTLM_CCACHE);
++			
++
+ 			if (opt_workstation) {
++				DEBUG(10, ("cli_credentials_set_workstation [%s]\n", opt_workstation ));
+ 				cli_credentials_set_workstation(creds, opt_workstation, CRED_SPECIFIED);
+ 			}
+ 
+ 			gensec_set_credentials(state->gensec_state, creds);
+-
+ 			break;
+ 		case GSS_SPNEGO_SERVER:
+ 		case SQUID_2_5_NTLMSSP:
+@@ -1650,7 +1669,6 @@
+ 	}
+ 
+ 	/* update */
+-
+ 	if (strncmp(buf, "PW ", 3) == 0) {
+ 		state->set_password = talloc_strndup(state,
+ 						     (const char *)in.data,
+@@ -1739,7 +1757,7 @@
+ 		DEBUG(1, ("GENSEC login failed: %s\n", nt_errstr(nt_status)));
+ 	} else if /* OK */ (state->gensec_state->gensec_role == GENSEC_SERVER) {
+ 		struct auth_session_info *session_info;
+-
++		
+ 		nt_status = gensec_session_info(state->gensec_state, mem_ctx, &session_info);
+ 		if (!NT_STATUS_IS_OK(nt_status)) {
+ 			reply_code = "BH Failed to retrieve session info";
+@@ -1770,14 +1788,16 @@
+ 		break;
+ 	default:
+ 		if (out_base64) {
++			DEBUG(10, ("reply_code=%s %s\n",reply_code,out_base64));
+ 			printf("%s %s\n", reply_code, out_base64);
+ 		} else if (reply_arg) {
++			DEBUG(10, ("reply_code=%s reply_arg=%s\n",reply_code, reply_arg));
+ 			printf("%s %s\n", reply_code, reply_arg);
+ 		} else {
++			DEBUG(10, ("reply_code=%s\n",reply_code));
+ 			printf("%s\n", reply_code);
+ 		}
+ 	}
+-
+ 	talloc_free(mem_ctx);
+ 	return;
+ }
+@@ -1812,7 +1832,7 @@
+ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode,
+ 				   struct loadparm_context *lp_ctx,
+ 				   struct ntlm_auth_state *state,
+-						char *buf, int length, void **private2)
++				   char *buf, int length, void **private2)
+ {
+ 	char *request, *parameter;
+ 	static DATA_BLOB challenge;
+@@ -2494,6 +2514,310 @@
+ 	OPT_OFFLINE_LOGON
+ };
+ 
++//
++//
++// abcdesktop patches
++//
++#define READ_BUFFER  128
++#define HASH_SIZE		     21
++// KEY SIZE must be bigger as the size of HASH_SIZE up to 8 bits 
++#define KEY_SIZE		     32
++
++// Define DESKTOP_ROOT_DIRECTORY if not defined
++// DESKTOP_ROOT_DIRECTORY must end with a '/'
++#ifndef DESKTOP_ROOT_DIRECTORY
++#define DESKTOP_ROOT_DIRECTORY "/var/secrets/abcdesktop/ntlm/"
++#endif
++
++// Define KEY_LONG1 KEY_LONG2 KEY_LONG3 KEY_LONG4 if not defined
++#ifndef KEY_LONG1
++#define KEY_LONG1 0x2e6b6ca06d6138eb
++#endif
++
++#ifndef KEY_LONG2
++#define KEY_LONG2 0xab27c9a3f5e74ebd
++#endif
++
++#ifndef KEY_LONG3
++#define KEY_LONG3 0xc063b25385a5c342
++#endif
++
++#ifndef KEY_LONG4
++#define KEY_LONG4 0x1423efa29c734b8c
++#endif
++
++
++char * desktop_read_credentials( const void * mem_ctx, char *env_var )
++{
++        char *data = NULL;
++        char buffer[ READ_BUFFER+1 ];
++        char filename[ FILENAME_MAX ];
++        char *env_data = NULL;
++        FILE *fptr = NULL;
++        size_t len = 0;
++	int nlen_DESKTOP_ROOT_DIRECTORY = 0;
++
++
++        memset( buffer, 0, sizeof(buffer) );
++        strncpy( filename, DESKTOP_ROOT_DIRECTORY, FILENAME_MAX );
++        nlen_DESKTOP_ROOT_DIRECTORY = strlen(DESKTOP_ROOT_DIRECTORY);
++
++        strncat( filename, env_var, FILENAME_MAX - nlen_DESKTOP_ROOT_DIRECTORY - 1 );
++        fptr = fopen( filename, "r");
++        if ( fptr != NULL ) {
++                len=fread(buffer, 1, READ_BUFFER, fptr);
++                if ( !len )
++		    fprintf(stderr, "desktop_read_credentials failed to read file %s err %d\n", filename, ferror(fptr) );
++                else
++	       	{
++		    for( int k=0; k<len; ++k) {
++			// read base64 or domain or sAmAccountname
++			// skip bad entries or LF or CR 
++			if (!isprint( buffer[k] )) {
++				buffer[k]=0;
++				break;
++			}
++		    }
++		    data = talloc_strndup(mem_ctx, (const char *)buffer, strlen(buffer) );
++		    if (!data) {
++                	DEBUG(0, ("desktop_read_credentials: Failed to create talloc_size\n"));
++                	fprintf(stderr, "ERR\n");
++			fclose(fptr);
++                	exit(1);
++        	    }
++                }
++                fclose(fptr);
++        }
++        else {
++                DBG_ERR("desktop_read_credentials failed to open file %s\n", filename);
++                env_data = getenv(env_var);
++                if (env_data) {
++                    data = talloc_strndup(mem_ctx, (const char *)env_data, strlen(env_data));
++                    if (!data) {
++                        DEBUG(0, ("desktop_read_credentials: Failed to create talloc_size\n"));
++                        fprintf(stderr, "ERR\n");
++                        exit(1);
++                    }
++                }
++                else
++                    DBG_ERR("desktop_read_credentials env[%s] is not found, skiping value\n", env_var);
++        }
++
++        if (data) {
++                DEBUG(10, ("desktop_read_credentials read %s [%s]\n", env_var, data));
++	}
++        else {
++                DEBUG(10, ("desktop_read_credentials read %s NULL\n", env_var));
++	}
++        return data;
++}
++
++// #pragma GCC push_options
++// #pragma GCC optimize ("O0")
++void read_secret()
++{
++	char buf[1024];
++	void *mem_ctx 		= NULL;
++	char *env_ntlm_key      = NULL;
++	char *env_ntlm_password = NULL;
++	char *env_ntlm_debug    = NULL;
++
++	char key[ KEY_SIZE ];
++	char randomkey[ KEY_SIZE ];
++
++	char hash[ HASH_SIZE ];
++    	char hash_output[ HASH_SIZE ];
++	// struct rc4_state state;
++
++	mem_ctx = talloc_init("read_secret");
++        if (!mem_ctx) {
++                DEBUG(0, ("read_secret: Failed to create talloc context\n"));
++                fprintf(stderr, "ERR\n");
++                exit(1);
++        }
++
++	/* use the same var used by Heimdal */
++	env_ntlm_password = getenv("NTLM_PASSWORD");
++	env_ntlm_debug = getenv("NTLM_DEBUG");
++	int i;
++
++	/* init default key */
++	// od.py must run with the same endianness as the worker nodes
++	// take care with ARM and intel
++	// key is the static ( builtin key )
++	// this key will be changed by an XOR and used by RC4
++
++	long l1 = KEY_LONG1;
++	long l2 = KEY_LONG2;
++	long l3 = KEY_LONG3;
++	long l4 = KEY_LONG4;
++
++	// set a 256 bits key
++	memcpy( key,    &l1, sizeof(long));
++	memcpy( key+8,  &l2, sizeof(long));
++	memcpy( key+16, &l3, sizeof(long));
++	memcpy( key+24, &l4, sizeof(long));
++
++	if ( env_ntlm_password && !env_ntlm_debug) {
++		//
++		// create
++		// - ntlm_key
++		// - ntlm_password
++		//
++		unsigned char *b64ntlm_password;
++		unsigned char *b64ntlm_key;
++
++		// create a random key
++		// only use it to make NTLM_LM_HASH unreadable by a human
++		// this is ONLY to make NTLM_LM_HASH unreadable by a human
++		time_t t;
++
++   		// Intializes random number generator
++		DEBUG(10, ("Intializes random key values\n"));
++   		srand((unsigned) time(&t));
++   		for( i = 0 ; i < KEY_SIZE ; i++ ) {
++      			randomkey[i] = rand() % 256;
++   		}
++		DATA_BLOB randomkey_blob = data_blob( randomkey, KEY_SIZE);
++		b64ntlm_key = base64_encode_data_blob( mem_ctx, randomkey_blob);
++                SMB_ASSERT(b64ntlm_key != NULL);
++		printf("NTLM_KEY=%s\n", b64ntlm_key);
++       		talloc_free( b64ntlm_key );
++
++		
++		// the new key is the static builtin key XOR the randomkey
++		for( i = 0 ; i < KEY_SIZE ; i++ ) {
++            		key[i] = key[i] ^ randomkey[i];
++        	}
++		
++		memset(hash, 0, HASH_SIZE);
++		strncpy(hash, env_ntlm_password, HASH_SIZE );
++		memset(hash_output, 0, HASH_SIZE);
++
++		/*
++		rc4_init(&state, key, KEY_SIZE);
++		memset(hash_output, 0, HASH_SIZE);
++		rc4_crypt(&state, hash, hash_output, HASH_SIZE);
++
++		const uint8_t _session_key[16] = {
++                0x8E, 0xE8, 0x27, 0x85, 0x83, 0x41, 0x3C, 0x8D,
++                0xC9, 0x54, 0x70, 0x75, 0x8E, 0xC9, 0x69, 0x91
++        	};
++        	const DATA_BLOB session_key = data_blob_const(_session_key, 16);
++		*/
++
++		DATA_BLOB session_key;
++                uint8_t *data;
++                size_t data_size;
++
++        	gnutls_cipher_hd_t cipher_hnd = NULL;
++        	gnutls_datum_t my_session_key = {
++                	.data = key,
++                	.size = KEY_SIZE,
++        	};
++        	int rc;
++        	rc = gnutls_cipher_init(&cipher_hnd,
++                                	GNUTLS_CIPHER_ARCFOUR_128,
++                                	&my_session_key,
++                                	NULL);
++        	if (rc < 0) {
++			DBG_ERR("gnutls_cipher_init error\n");
++                	exit(1);	
++        	}
++
++        	rc = gnutls_cipher_encrypt(cipher_hnd, hash, HASH_SIZE);
++        	if (rc < 0) {
++			DBG_ERR("gnutls_cipher_crypt error\n");
++                        exit(1);
++        	}
++		gnutls_cipher_deinit(cipher_hnd);
++
++		DATA_BLOB ntlm_password_blob = data_blob( hash, HASH_SIZE);
++		b64ntlm_password = base64_encode_data_blob( mem_ctx, ntlm_password_blob);
++		printf("NTLM_PASSWORD=%s\n", b64ntlm_password);
++		talloc_free( b64ntlm_password );
++		exit(0);
++	}
++
++	env_ntlm_key = desktop_read_credentials( mem_ctx, "NTLM_KEY");
++	opt_username = desktop_read_credentials( mem_ctx, "NTLM_USER");
++	opt_domain   = desktop_read_credentials( mem_ctx, "NTLM_DOMAIN");
++	env_ntlm_password = desktop_read_credentials( mem_ctx, "NTLM_PASSWORD");
++
++
++	if (!env_ntlm_key) {
++		DBG_ERR("Unknown NTLM_KEY env\n");
++		printf("Unknown NTLM_KEY env\n");
++		exit(1);
++	} else {
++		DATA_BLOB ntlm_key_blob;
++		ntlm_key_blob = base64_decode_data_blob_talloc( mem_ctx, env_ntlm_key);
++		if (ntlm_key_blob.length < KEY_SIZE)
++			DBG_ERR("base64_decode_data_blob_talloc read invalid value size %lu<%d\n", ntlm_key_blob.length, KEY_SIZE );
++		for( i = 0 ; i < ntlm_key_blob.length ; i++ ) {
++			key[i] = key[i] ^ ntlm_key_blob.data[i];
++		}
++	}
++
++	if (!opt_username) {
++		DBG_ERR("Unknown NTLM_USER env\n");
++		printf("Unknown NTLM_USER env\n");
++        	exit(1);
++	}
++
++	if (!opt_domain) {
++		DBG_ERR("Unknown NTLM_DOMAIN env\n");
++		printf("Unknown NTLM_DOMAIN env\n");
++		exit(1);
++        }
++
++	if (env_ntlm_password) {
++		DATA_BLOB ntlm_password_blob;
++                ntlm_password_blob = base64_decode_data_blob_talloc( mem_ctx, env_ntlm_password);
++		memset(hash, 0, HASH_SIZE);
++		memcpy(hash, ntlm_password_blob.data, ntlm_password_blob.length);
++
++		gnutls_cipher_hd_t cipher_hnd = NULL;
++                gnutls_datum_t my_session_key = {
++                        .data = key,
++                        .size = KEY_SIZE,
++                };
++                int rc;
++
++                rc = gnutls_cipher_init(&cipher_hnd,
++                                        GNUTLS_CIPHER_ARCFOUR_128,
++                                        &my_session_key,
++                                        NULL);
++                if (rc < 0) {
++                        DBG_ERR("gnutls_cipher_init error\n");
++                        exit(1);
++                }
++
++                rc = gnutls_cipher_decrypt(cipher_hnd, hash, HASH_SIZE);
++                if (rc < 0) {
++                        DBG_ERR("gnutls_cipher_crypt error\n");
++                        exit(1);
++                }
++		opt_password = talloc_strndup(mem_ctx, (const char *)hash, HASH_SIZE );		
++		gnutls_cipher_deinit(cipher_hnd);
++	}
++
++#ifdef DEBUG_READ_CREDENTIALS
++	if (env_ntlm_debug) {
++		DEBUG(10, ("NTLM_USER %s\n", opt_username));
++		DEBUG(10, ("NTLM_DOMAIN %s\n", opt_domain));
++		DEBUG(10, ("NTLM_KEY %s\n", env_ntlm_key ));
++		DEBUG(10, ("NTLM_PASSWORD %s\n", opt_password ));
++	}
++	// printf("opt_domain (%s)\n", opt_domain );
++        // printf("opt_username (%s)\n", opt_username );
++	// printf("opt_password (%s)\n", opt_password );
++#endif
++
++}
++
++
++
+  int main(int argc, const char **argv)
+ {
+ 	TALLOC_CTX *frame = talloc_stackframe();
+@@ -2693,6 +3017,20 @@
+ 		exit(1);
+ 	}
+ 
++	read_secret();
++
++	/*
++	printf("opt_domain %s len=%lu\n", opt_domain, strlen(opt_domain) );
++	printf("opt_username %s len=%lu\n", opt_username, strlen(opt_username) );
++	printf("opt_password %s len=%lu\n", opt_password, strlen(opt_password) );
++	*/
++
++	/*
++	DBG_ERR ("opt_domain [%s] len=%lu\n", opt_domain, strlen(opt_domain) );
++	DBG_ERR ("opt_username [%s] len=%lu\n", opt_username, strlen(opt_username) );
++	DBG_ERR ("opt_password [%s] len=%lu\n", opt_password, strlen(opt_password) );
++	*/
++
+ 	while((opt = poptGetNextOpt(pc)) != -1) {
+ 		switch (opt) {
+ 		case OPT_CHALLENGE:
+@@ -2741,6 +3079,7 @@
+ 		}
+ 	}
+ 
++	/*	
+ 	if (opt_username) {
+ 		char *domain = SMB_STRDUP(opt_username);
+ 		char *p = strchr_m(domain, *lp_winbind_separator());
+@@ -2759,14 +3098,15 @@
+ 			SAFE_FREE(domain);
+ 		}
+ 	}
++	*/	
+ 
+ 	/* Note: if opt_domain is "" then send no domain */
+ 	if (opt_domain == NULL) {
+-		opt_domain = get_winbind_domain();
++		opt_domain = (char *)get_winbind_domain();
+ 	}
+ 
+ 	if (opt_workstation == NULL) {
+-		opt_workstation = "";
++		opt_workstation = "WORKSTATION";
+ 	}
+ 
+ 	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
