@@ -1,5 +1,5 @@
 --- ntlm_auth.c	2023-08-07 12:34:22.000000000 +0200
-+++ ntlm_auth.abcdesktop.c	2023-08-09 11:51:56.159059756 +0200
++++ ntlm_auth.abcdesktop.c	2023-08-10 12:32:01.530284094 +0200
 @@ -165,10 +165,13 @@
  	{ NUM_HELPER_MODES, NULL, NULL}
  };
@@ -528,28 +528,7 @@
   int main(int argc, const char **argv)
  {
  	TALLOC_CTX *frame = talloc_stackframe();
-@@ -2693,6 +3017,20 @@
- 		exit(1);
- 	}
- 
-+	read_secret();
-+
-+	/*
-+	printf("opt_domain %s len=%lu\n", opt_domain, strlen(opt_domain) );
-+	printf("opt_username %s len=%lu\n", opt_username, strlen(opt_username) );
-+	printf("opt_password %s len=%lu\n", opt_password, strlen(opt_password) );
-+	*/
-+
-+	/*
-+	DBG_ERR ("opt_domain [%s] len=%lu\n", opt_domain, strlen(opt_domain) );
-+	DBG_ERR ("opt_username [%s] len=%lu\n", opt_username, strlen(opt_username) );
-+	DBG_ERR ("opt_password [%s] len=%lu\n", opt_password, strlen(opt_password) );
-+	*/
-+
- 	while((opt = poptGetNextOpt(pc)) != -1) {
- 		switch (opt) {
- 		case OPT_CHALLENGE:
-@@ -2741,6 +3079,7 @@
+@@ -2741,6 +3065,7 @@
  		}
  	}
  
@@ -557,15 +536,16 @@
  	if (opt_username) {
  		char *domain = SMB_STRDUP(opt_username);
  		char *p = strchr_m(domain, *lp_winbind_separator());
-@@ -2759,14 +3098,15 @@
+@@ -2759,15 +3084,17 @@
  			SAFE_FREE(domain);
  		}
  	}
 +	*/	
  
  	/* Note: if opt_domain is "" then send no domain */
- 	if (opt_domain == NULL) {
+-	if (opt_domain == NULL) {
 -		opt_domain = get_winbind_domain();
++	/* if (opt_domain == NULL) {
 +		opt_domain = (char *)get_winbind_domain();
  	}
  
@@ -573,5 +553,26 @@
 -		opt_workstation = "";
 +		opt_workstation = "WORKSTATION";
  	}
++	*/
  
  	lp_ctx = loadparm_init_s3(NULL, loadparm_s3_helpers());
+ 	if (lp_ctx == NULL) {
+@@ -2775,6 +3102,18 @@
+ 		exit(1);
+ 	}
+ 
++	/* overwrite params username */
++	read_secret();
++
++	/*
++	 * troubleshooting debug 
++	 * do not uncomment 
++	 * dump all credentials
++        DBG_ERR ("opt_domain   [%s] len=%lu\n", opt_domain,   strlen(opt_domain) );
++        DBG_ERR ("opt_username [%s] len=%lu\n", opt_username, strlen(opt_username) );
++        DBG_ERR ("opt_password [%s] len=%lu\n", opt_password, strlen(opt_password) );
++	*/
++
+ 	if (helper_protocol) {
+ 		int i;
+ 		for (i=0; i<NUM_HELPER_MODES; i++) {
