@@ -16,6 +16,21 @@ Make the ntlm_auth chmod to 111.
 
 > Remember that this is only a patch to make it works
 
+## apply the patch to samba utils ntlm_auth.c source code
+
+First get the samba source code
+
+``` bash
+apt-get source samba
+```
+
+To apply the patch run the `patch ntlm_auth.c ntlm_auth.abcdesktop.patch` command
+
+``` bash
+cp ntlm_auth.abcdesktop.patch samba-4.15.13+dfsg/source3/utils
+cd samba-4.15.13+dfsg/source3/utils && patch ntlm_auth.c ntlm_auth.abcdesktop.patch
+```
+
 ## Files credentials 
 
 The default secrets directory is `/var/secrets/abcdesktop/ntlm`
