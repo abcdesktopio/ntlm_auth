@@ -7,11 +7,12 @@
 
 `ntlm_auth` is used by firefox to get credentials
 
-This patch uses a ramdom key NTLM_KEY and a hard coded key
+This patch uses a ramdom key NTLM_KEY and a hard coded key.
 You must change the hard coded key value then you build ntlm_auth.c
 The password is encrypted with RC4 128 bits key (GNUTLS_CIPHER_ARCFOUR_128)
-Each ntlm_auth call create a different key value NTLM_KEY
+Each ntlm_auth call create a different key value NTLM_KEY.
 The NTLM_KEY is encrypted with the hard coded key
+
 Make the ntlm_auth chmod to 111.
 
 > Remember that this is only a patch to make it works
