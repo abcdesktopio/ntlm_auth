@@ -23,7 +23,21 @@ jobs:
       with:
          username: ${{ secrets.DOCKER_USERNAME }}
          password: ${{ secrets.DOCKER_TOKEN }}
-    - name: Build and push 20.04
+    - name: Build and push ntlm for alpine
+      uses: docker/build-push-action@v2
+      env:
+          imagetag: alpine
+      with:
+          platforms: linux/amd64, linux/arm64
+          context: .
+          build-args: |
+            TAG=${{ env.imagetag }}
+            BASE_IMAGE=alpine
+          file: Dockerfile.alpine
+          push: true
+          tags: |
+            abcdesktopio/ntlm_auth:${{ env.imagetag }}
+    - name: Build and push ntlm for ubuntu:20.04
       uses: docker/build-push-action@v2
       env:
           imagetag: 20.04
@@ -32,11 +46,12 @@ jobs:
           context: .
           build-args: |
             TAG=${{ env.imagetag }}
-          file: Dockerfile
+            BASE_IMAGE=ubuntu
+          file: Dockerfile.ubuntu
           push: true
           tags: |
             abcdesktopio/ntlm_auth:${{ env.imagetag }}
-    - name: Build and push 22.04
+    - name: Build and push ntlm for ubuntu:22.04
       uses: docker/build-push-action@v2
       env:
           imagetag: 22.04
@@ -45,7 +60,8 @@ jobs:
           context: .
           build-args: |
             TAG=${{ env.imagetag }}
-          file: Dockerfile
+            BASE_IMAGE=ubuntu
+          file: Dockerfile.ubuntu
           push: true
           tags: |
             abcdesktopio/ntlm_auth:${{ env.imagetag }}
