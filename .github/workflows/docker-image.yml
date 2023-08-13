@@ -31,8 +31,8 @@ jobs:
           platforms: linux/amd64, linux/arm64
           context: .
           build-args: |
-            TAG=${{ env.imagetag }}
-            BASE_IMAGE=alpine
+            TAG=latest
+            BASE_IMAGE=${{ env.imagetag }}
           file: Dockerfile.alpine
           push: true
           tags: |
