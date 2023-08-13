@@ -12,7 +12,7 @@ ARG BASE_IMAGE_RELEASE
 # patched with openbox.title.patch for abcdesktop
 FROM ${BASE_IMAGE}:${TAG}
 RUN apk --update  add alpine-sdk bash samba doas make
-RUN VERSION=$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') git clone --depth 1 --branch v$VERSION git://git.alpinelinux.org/aports
+RUN git clone --depth 1 --branch v$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') git://git.alpinelinux.org/aports
 RUN abuild-keygen -n -a
 RUN cp /root/.abuild/*.pub /etc/apk/keys
 RUN cd /aports/main/samba/ && abuild -F deps
