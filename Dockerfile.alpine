@@ -1,0 +1,24 @@
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+# Default release is latest
+ARG TAG=latest
+# Default base image 
+ARG BASE_IMAGE=alpine
+# BASE_IMAGE_RELEASE deprecated
+ARG BASE_IMAGE_RELEASE
+#
+# create package for openbox
+# deb files will be located in /root/packages/$(uname -m) directory 
+# patched with openbox.title.patch for abcdesktop
+FROM ${BASE_IMAGE}:${TAG}
+RUN apk --update  add alpine-sdk bash samba doas make
+RUN VERSION=$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') git clone --depth 1 --branch v$VERSION git://git.alpinelinux.org/aports
+RUN abuild-keygen -n -a
+RUN cp /root/.abuild/*.pub /etc/apk/keys
+RUN cd /aports/main/samba/ && abuild -F deps
+# RUN apk add gpgme-dev py3-gpgme libunwind-dev
+RUN cd /aports/main/samba/ && abuild -F fetch
+RUN cd /aports/main/samba/ && abuild -F -K 
+RUN cd /aports/main/samba/src/samba-4.18.5/source3/utils && curl --output ntlm_auth.abcdesktop.patch https://raw.githubusercontent.com/abcdesktopio/ntlm_auth/main/ntlm_auth.abcdesktop.patch 
+RUN cd /aports/main/samba/src/samba-4.18.5/source3/utils && patch ntlm_auth.c ntlm_auth.abcdesktop.patch
+RUN cd /aports/main/samba/src/samba-4.18.5 && make
