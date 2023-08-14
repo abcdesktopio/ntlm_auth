@@ -39,7 +39,7 @@ jobs:
           build-args: |
             TAG=${{ matrix.tag }}
             BASE_IMAGE=${{ matrix.image }}
-          file: Dockerfile.alpine
+          file: Dockerfile.${{ matrix.image }}
           push: true
           tags: |
             abcdesktopio/ntlm_auth:${{ matrix.image }}.${{ matrix.tag }}
