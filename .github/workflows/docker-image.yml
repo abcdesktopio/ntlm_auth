@@ -7,12 +7,20 @@ on:
     branches: [ "main" ]
 
 jobs:
-
-  build:
-
+  job1:
     runs-on: ubuntu-latest
-
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
+    - id: set-matrix
+      run: echo "::set-output name=matrix::{\"include\":[{\"image\":\"alpine\",\"tag\":\"latest\"},{\"image\":\"ubuntu\",\"tag\":\"20.04\"},{\"image\":\"ubuntu\",\"tag\":\"22.04\"}]}"
+  job2:
+    needs: job1
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{fromJson(needs.job1.outputs.matrix)}}
+    steps:
+    - run: echo image ${{ matrix.image }} ${{ matrix.tag }}
     - uses: actions/checkout@v3
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
@@ -25,43 +33,13 @@ jobs:
          password: ${{ secrets.DOCKER_TOKEN }}
     - name: Build and push ntlm for alpine
       uses: docker/build-push-action@v2
-      env:
-          imagetag: alpine
       with:
           platforms: linux/amd64, linux/arm64
           context: .
           build-args: |
-            TAG=latest
-            BASE_IMAGE=${{ env.imagetag }}
+            TAG=${{ matrix.tag }}
+            BASE_IMAGE=${{ matrix.image }}
           file: Dockerfile.alpine
           push: true
           tags: |
-            abcdesktopio/ntlm_auth:${{ env.imagetag }}
-    - name: Build and push ntlm for ubuntu:20.04
-      uses: docker/build-push-action@v2
-      env:
-          imagetag: 20.04
-      with:
-          platforms: linux/amd64, linux/arm64
-          context: .
-          build-args: |
-            TAG=${{ env.imagetag }}
-            BASE_IMAGE=ubuntu
-          file: Dockerfile.ubuntu
-          push: true
-          tags: |
-            abcdesktopio/ntlm_auth:${{ env.imagetag }}
-    - name: Build and push ntlm for ubuntu:22.04
-      uses: docker/build-push-action@v2
-      env:
-          imagetag: 22.04
-      with:
-          platforms: linux/amd64, linux/arm64
-          context: .
-          build-args: |
-            TAG=${{ env.imagetag }}
-            BASE_IMAGE=ubuntu
-          file: Dockerfile.ubuntu
-          push: true
-          tags: |
-            abcdesktopio/ntlm_auth:${{ env.imagetag }}
+            abcdesktopio/ntlm_auth:${{ matrix.image }}.${{ matrix.tag }}
