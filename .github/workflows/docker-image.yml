@@ -13,17 +13,17 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
     - id: set-matrix
-      run: echo "::set-output name=matrix::{\"include\":[ {\"image\":\"alpine\",\"tag\":\"latest\"},{\"image\":\"ubuntu\",\"tag\":\"20.04\"},{\"image\":\"ubuntu\",\"tag\":\"22.04\"}]}"
+      run: echo "::set-output name=matrix::{ \"plateforms\":[ \"linux/amd64\", \"linux/arm64\" ],  \"images\":[ {\"image\":\"alpine\",\"tag\":\"latest\"}, {\"image\":\"ubuntu\",\"tag\":\"20.04\"}, {\"image\":\"ubuntu\",\"tag\":\"22.04\"} ]}"
   job2:
     needs: job1
     runs-on: ubuntu-latest
     strategy:
       matrix: 
         ${{fromJson(needs.job1.outputs.matrix)}}
-        plateforms:[ "linux/amd64", "linux/arm64" ]
     steps:
-    - run: echo image ${{ matrix.image }} ${{ matrix.tag }}
-    - run: echo plateforms ${{ matrix.plateforms }}
+    - run: echo matrix.plateforms ${{ matrix.plateforms }}
+    - run: echo matrix.images ${{ matrix.images }} 
+    - run: echo matrix.images.image ${{ matrix.images.image }}
     - uses: actions/checkout@v3
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
