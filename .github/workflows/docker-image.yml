@@ -22,7 +22,6 @@ jobs:
         ${{fromJson(needs.job1.outputs.matrix)}}
     steps:
     - run: echo matrix.plateforms ${{ matrix.plateforms }}
-    - run: echo matrix.images ${{ matrix.images }} 
     - run: echo matrix.images.image ${{ matrix.images.image }}
     - uses: actions/checkout@v3
     - name: Set up QEMU
@@ -40,9 +39,9 @@ jobs:
           platforms: ${{ matrix.plateforms }}
           context: .
           build-args: |
-            TAG=${{ matrix.tag }}
-            BASE_IMAGE=${{ matrix.image }}
+            TAG=${{ matrix.images.tag }}
+            BASE_IMAGE=${{  matrix.images.image }}
           file: Dockerfile.${{ matrix.image }}
           push: true
           tags: |
-            abcdesktopio/ntlm_auth:${{ matrix.image }}.${{ matrix.tag }}
+            abcdesktopio/ntlm_auth:${{ matrix.images.image }}.${{ matrix.images.tag }}
