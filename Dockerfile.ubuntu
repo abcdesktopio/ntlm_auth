@@ -23,7 +23,7 @@ RUN apt-get source samba
 COPY ntlm_auth.abcdesktop.patch /samba/samba-4.15.13+dfsg/source3/utils
 RUN cd /samba/samba-4.15.13+dfsg/source3/utils && patch ntlm_auth.c ntlm_auth.abcdesktop.patch
 WORKDIR /samba/samba-4.15.13+dfsg
-RUN ./configure
+RUN ./configure --without-ad-dc
 RUN make
 # RUN cd openbox-3.6.1 && dch -n abcdesktop_sig_usr
 # RUN cd openbox-3.6.1 && EDITOR=/bin/true dpkg-source -q --commit . abcdesktop_sig_usr
