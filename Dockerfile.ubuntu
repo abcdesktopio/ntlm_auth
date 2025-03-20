@@ -36,9 +36,10 @@ RUN mkdir -p /samba
 WORKDIR /samba
 RUN apt-get source samba
 RUN ls -la /samba
-COPY ntlm_auth.abcdesktop.patch /samba/samba-*/source3/utils
-RUN cd /samba/samba-*/source3/utils && patch ntlm_auth.c ntlm_auth.abcdesktop.patch
-RUN cd /samba/samba-* && ./configure --without-ad-dc
-RUN cd /samba/samba-* && make
+
+COPY ntlm_auth.abcdesktop.patch /samba/samba-*dfsg/source3/utils
+RUN cd /samba/samba-*dfsg/source3/utils && patch ntlm_auth.c ntlm_auth.abcdesktop.patch
+RUN cd /samba/samba-*dfsg && ./configure --without-ad-dc
+RUN cd /samba/samba-*dfsg && make
 
 
