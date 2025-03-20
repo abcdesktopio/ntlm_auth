@@ -19,6 +19,8 @@ RUN cd /aports/main/samba/ && abuild -F deps
 # RUN apk add gpgme-dev py3-gpgme libunwind-dev
 RUN cd /aports/main/samba/ && abuild -F fetch
 RUN cd /aports/main/samba/ && abuild -F -K 
-RUN cd /aports/main/samba/src/samba-4.18.5/source3/utils && curl --output ntlm_auth.abcdesktop.patch https://raw.githubusercontent.com/abcdesktopio/ntlm_auth/main/ntlm_auth.abcdesktop.patch 
-RUN cd /aports/main/samba/src/samba-4.18.5/source3/utils && patch ntlm_auth.c ntlm_auth.abcdesktop.patch
-RUN cd /aports/main/samba/src/samba-4.18.5 && make
+
+COPY ntlm_auth.abcdesktop.patch /
+RUN ls -la /aports/main/samba/src/
+RUN cd /aports/main/samba/src/samba-*/source3/utils && patch ntlm_auth.c /ntlm_auth.abcdesktop.patch
+RUN cd /aports/main/samba/src/samba-* && make
