@@ -7,19 +7,35 @@ ARG BASE_IMAGE=ubuntu
 # BASE_IMAGE_RELEASE deprecated
 ARG BASE_IMAGE_RELEASE
 ARG LINK_LOCALACCOUNT=true
+
+
 #
-# create package for openbox
-# deb files will be located in /root/packages/$(uname -m) directory 
-# patched with openbox.title.patch for abcdesktop
+# create package for samba
 FROM ${BASE_IMAGE}:${TAG}
+
+ENV DEBEMAIL=dev@abcdesktop.io
+ENV EMAIL=dev@abcdesktop.io
+SHELL [ "/bin/bash", "-c" ]
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
-RUN sed -i '/deb-src/s/^# //' /etc/apt/sources.list
+# add src in sources.list
+# for <= 22.04
+RUN source /etc/os-release ; echo "$ID $VERSION"
+RUN if [ -f /etc/apt/sources.list ] ; then \
+      sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list ||true ;\
+    fi
+# for >= 24.04
+RUN source /etc/os-release ; \
+    if [ -f "/etc/apt/sources.list.d/$ID.sources" ] ; then \
+      sed -Ei 's/^Types: deb/Types: deb deb-src/' "/etc/apt/sources.list.d/$ID.sources" ||true ;\
+    fi
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends devscripts wget ca-certificates git
+
 RUN apt-get build-dep -y samba
 RUN mkdir -p /samba
 WORKDIR /samba
 RUN apt-get source samba
+RUN ls -la /samba
 COPY ntlm_auth.abcdesktop.patch /samba/samba-4.15.13+dfsg/source3/utils
 RUN cd /samba/samba-4.15.13+dfsg/source3/utils && patch ntlm_auth.c ntlm_auth.abcdesktop.patch
 WORKDIR /samba/samba-4.15.13+dfsg
