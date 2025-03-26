@@ -39,14 +39,14 @@ jobs:
       id: metadata
       with:
           images: abcdesktopio/ntlm_auth:${{ matrix.images.image }}.${{ matrix.images.tag }}
-    - name: Build and push ntlm for alpine
+    - name: Build and push ntlm_auth
       uses: docker/build-push-action@v4
       with:
-          platforms: linux/arm64,linux/amd64
+          platforms: linux/amd64
           context: .
           build-args: |
             TAG=${{ matrix.images.tag }}
-            BASE_IMAGE=${{  matrix.images.image }}
+            BASE_IMAGE=${{ matrix.images.image }}
           file: Dockerfile.${{ matrix.images.image }}
           push: true
           tags: |
