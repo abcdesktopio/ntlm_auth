@@ -48,21 +48,12 @@ RUN cd /samba/samba-*dfsg && make
 
 # create dist directory
 RUN mkdir -p /dist/bin /dist/lib
-RUN cd /samba/samba-*dfsg/bin/shared/private/ &&  ls -la
-RUN cd /samba/samba-*dfsg/bin/shared/private/ && \
-    cp libgenrand-samba4.so.0 \
-       libsecrets3-samba4.so.0 \
-       libauthkrb5-samba4.so.0 \
-       libgse-samba4.so.0 \
-       libsamba3-util-samba4.so.0 \
-       libsamba-security-samba4.so.0 \
-       libsamba-debug-samba4.so.0 \
-       libgensec-samba4.so.0 \
-       libreplace-samba4.so.0 \
-       libcmdline-samba4.so.0 \
-       libcliauth-samba4.so.0 \
-       /dist/lib
-RUN cd /samba/samba-*dfsg/bin/default/source3/utils/ntlm_auth /dist/bin
+RUN for f in libgenrand libsecrets3 libauthkrb5 libgse libsamba3-util libsamba-security libsamba-debug libgensec libreplace libcmdline libcliauth  ; do \
+        cp /samba/samba-*.*.*/bin/shared/private/${f}* /dist/lib/; \
+    done
+RUN cp /samba/samba-*dfsg/bin/ntlm_auth /dist/bin
+RUN cd /dist/lib && strip *
+RUN cd /dist/bin && strip *
 
 
 
