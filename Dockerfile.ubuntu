@@ -48,6 +48,7 @@ RUN cd /samba/samba-*dfsg && make
 
 # create dist directory
 RUN mkdir -p /dist/bin /dist/lib
+RUN cd /samba/samba-*dfsg/bin/shared/private/ &&  ls -la
 RUN cd /samba/samba-*dfsg/bin/shared/private/ && \
     cp libgenrand-samba4.so.0 \
        libsecrets3-samba4.so.0 \
