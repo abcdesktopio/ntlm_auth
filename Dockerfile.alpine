@@ -11,7 +11,7 @@ ARG BASE_IMAGE_RELEASE
 # deb files will be located in /root/packages/$(uname -m) directory 
 # patched with openbox.title.patch for abcdesktop
 FROM ${BASE_IMAGE}:${TAG}
-RUN apk --update  add alpine-sdk bash samba doas make
+RUN apk --update add alpine-sdk bash samba doas make
 RUN git clone --depth 1 --branch v$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') git://git.alpinelinux.org/aports
 RUN abuild-keygen -n -a
 RUN cp /root/.abuild/*.pub /etc/apk/keys
@@ -24,21 +24,11 @@ COPY ntlm_auth.abcdesktop.patch /
 RUN ls -la /aports/main/samba/src/
 RUN cd /aports/main/samba/src/samba-*/source3/utils && patch ntlm_auth.c /ntlm_auth.abcdesktop.patch
 RUN cd /aports/main/samba/src/samba-* && make
-RUN ls -la /aports/main/samba/src
-RUN ls -la /aports/main/samba/src/bin
 # create dist directory
 RUN mkdir -p /dist/bin /dist/lib
-RUN cd /aports/main/samba/src/samba-*/bin/shared/private/ && \
-    cp libgenrand-samba4.so.0 \
-       libsecrets3-samba4.so.0 \
-       libauthkrb5-samba4.so.0 \
-       libgse-samba4.so.0 \
-       libsamba3-util-samba4.so.0 \
-       libsamba-security-samba4.so.0 \
-       libsamba-debug-samba4.so.0 \
-       libgensec-samba4.so.0 \
-       libreplace-samba4.so.0 \
-       libcmdline-samba4.so.0 \
-       libcliauth-samba4.so.0 \
-       /dist/lib
-RUN cd /samba/samba-*dfsg/bin/default/source3/utils && cp ntlm_auth /dist/bin
+RUN for f in libgenrand libsecrets3 libauthkrb5 libgse libsamba3-util libsamba-security libsamba-debug libgensec libreplace libcmdline libcliauth  ; do \
+        cp /aports/main/samba/src/samba-*.*.*/bin/shared/private/${f}* /dist/lib/; \
+    done
+RUN cd /aports/main/samba/src/samba-*.*.*/bin/ && cp ntlm_auth /dist/bin
+RUN cd /dist/lib && strip *
+RUN cd /dist/bin && strip *
