@@ -31,10 +31,11 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
     - name: Login to DockerHub
-      uses: docker/login-action@v2
+      uses: docker/login-action@v3
       with:
-         username: ${{ secrets.DOCKER_USERNAME }}
-         password: ${{ secrets.DOCKER_TOKEN }}
+        registry: https://ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     - uses: docker/metadata-action@v4
       id: metadata
       with:
@@ -42,7 +43,7 @@ jobs:
     - name: Build and push ntlm_auth
       uses: docker/build-push-action@v4
       with:
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           context: .
           build-args: |
             TAG=${{ matrix.images.tag }}
@@ -50,4 +51,4 @@ jobs:
           file: Dockerfile.${{ matrix.images.image }}
           push: true
           tags: |
-            abcdesktopio/ntlm_auth:${{ matrix.images.image }}.${{ matrix.images.tag }}
+            ghcr.io/abcdesktopio/ntlm_auth:${{ matrix.images.image }}.${{ matrix.images.tag }}
