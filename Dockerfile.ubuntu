@@ -43,17 +43,14 @@ RUN ls -la /samba
 # create apply patch and build
 COPY ntlm_auth.abcdesktop.patch /
 RUN cd /samba/samba-*dfsg/source3/utils && patch ntlm_auth.c /ntlm_auth.abcdesktop.patch
-RUN cd /samba/samba-*dfsg && ./configure --without-ad-dc
-RUN cd /samba/samba-*dfsg && make
-
-# create dist directory
-RUN mkdir -p /dist/bin /dist/lib
-RUN for f in libgenrand libsecrets3 libauthkrb5 libgse libsamba3-util libsamba-security libsamba-debug libgensec libreplace libcmdline libcliauth  ; do \
-        cp /samba/samba-*.*.*/bin/shared/private/${f}* /dist/lib/; \
-    done
-RUN cp /samba/samba-*dfsg/bin/ntlm_auth /dist/bin
-RUN cd /dist/lib && strip *
-RUN cd /dist/bin && strip *
+RUN cd /samba/samba-*dfsg && dch -n abcdesktop_ntlm
+RUN cd /samba/samba-*dfsg && EDITOR=/bin/true dpkg-source -q --commit . abcdesktop_ntlm
+RUN cd /samba/samba-*dfsg && debuild -us -uc
+# RUN cd /samba/samba-*dfsg && ./configure --without-ad-dc
+# RUN cd /samba/samba-*dfsg && make
+# COPY all deb file except dev to dist 
+RUN mkdir /dist
+RUN cp $(ls -a *.deb |grep -v dev) /dist
 
 
 
