@@ -12,7 +12,11 @@ ARG BASE_IMAGE_RELEASE
 # patched with openbox.title.patch for abcdesktop
 FROM ${BASE_IMAGE}:${TAG}
 RUN apk --update add alpine-sdk bash samba doas make
-RUN git clone --depth 1 --branch v$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') git://git.alpinelinux.org/aports
+# edge is the master ( default) branch 
+# try to git clone --branch v$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') 
+# if failed use default branch because 
+# there is no edge branch in git://git.alpinelinux.org/aports 
+RUN git clone --depth 1 --branch v$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') git://git.alpinelinux.org/aports || git clone --depth 1  git://git.alpinelinux.org/aports
 RUN abuild-keygen -n -a
 RUN cp /root/.abuild/*.pub /etc/apk/keys
 RUN cd /aports/main/samba/ && abuild -F deps
