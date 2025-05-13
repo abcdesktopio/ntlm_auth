@@ -1,0 +1,52 @@
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+# Default release is 22.04
+ARG TAG=20.04
+# Default base image 
+ARG BASE_IMAGE=ubuntu
+# BASE_IMAGE_RELEASE deprecated
+ARG BASE_IMAGE_RELEASE
+
+
+#
+# create package for samba
+FROM ${BASE_IMAGE}:${TAG}
+
+ENV DEBEMAIL=dev@abcdesktop.io
+ENV EMAIL=dev@abcdesktop.io
+SHELL [ "/bin/bash", "-c" ]
+RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+# add src in sources.list
+# for <= 22.04
+RUN source /etc/os-release ; echo "$ID $VERSION"
+RUN if [ -f /etc/apt/sources.list ] ; then \
+      sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list ||true ;\
+    fi
+# for >= 24.04
+RUN source /etc/os-release ; \
+    if [ -f "/etc/apt/sources.list.d/$ID.sources" ] ; then \
+      sed -Ei 's/^Types: deb/Types: deb deb-src/' "/etc/apt/sources.list.d/$ID.sources" ||true ;\
+    fi
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends devscripts wget ca-certificates git
+
+# get samba build dep 
+RUN apt-get build-dep -y samba
+
+# get samba source
+RUN mkdir -p /samba
+WORKDIR /samba
+RUN apt-get source samba
+RUN ls -la /samba
+
+# create apply patch and build
+COPY ntlm_auth.abcdesktop.patch /
+RUN cd /samba/samba-*dfsg/source3/utils && patch ntlm_auth.c /ntlm_auth.abcdesktop.patch
+RUN cd /samba/samba-*dfsg && dch -n abcdesktop_ntlm
+RUN cd /samba/samba-*dfsg && EDITOR=/bin/true dpkg-source -q --commit . abcdesktop_ntlm
+RUN cd /samba/samba-*dfsg && debuild -us -uc
+# RUN cd /samba/samba-*dfsg && ./configure --without-ad-dc
+# RUN cd /samba/samba-*dfsg && make
+# COPY all deb file except dev to dist 
+RUN mkdir /dist
+RUN cp $(ls -a *.deb |grep -v dev) /dist
