@@ -31,6 +31,7 @@ jobs:
       - name: Prepare
         run: |
           platform=${{ matrix.platform }}
+          echo platform is ${ platform }
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
