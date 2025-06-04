@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  REGISTRY_IMAGE: abcdesktopio/ntlm_auth:debian.bookworm
+  REGISTRY_IMAGE: abcdesktopio/ntlm_auth_debian_bookworm
 
 jobs:
   build:
