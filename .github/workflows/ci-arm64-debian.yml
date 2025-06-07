@@ -28,12 +28,13 @@ jobs:
           echo $MACHINE
           if [ $MACHINE = 'x86_64' ]; then 
              echo 'platform=linux/amd64'
-             echo 'platform=linux/amd64' >> $GITHUB_ENV
+             echo 'platform=linux/amd64' >> ${GITHUB_ENV}
           fi
-          if [ $MACHINE = 'arm_64' ]; then 
+          if [ $MACHINE = 'aarch64' ]; then 
              echo 'platform=linux/arm64'
-             echo 'platform=linux/arm64' >> $GITHUB_ENV
+             echo 'platform=linux/arm64' >> ${GITHUB_ENV}
           fi
+          cat /etc/os_release
           source /etc/os_release
           echo ${ID}/{VERSION_ID}
           echo ${ID}/{VERSION_ID} >> $GITHUB_ENV
