@@ -34,8 +34,8 @@ jobs:
              echo 'platform=linux/arm64'
              echo 'platform=linux/arm64' >> ${GITHUB_ENV}
           fi
-          cat /etc/os_release
-          source /etc/os_release
+          cat /etc/os-release
+          source /etc/os-release
           echo ${ID}/{VERSION_ID}
           echo ${ID}/{VERSION_ID} >> $GITHUB_ENV
     
