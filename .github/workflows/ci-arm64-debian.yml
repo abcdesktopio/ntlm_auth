@@ -16,7 +16,7 @@ jobs:
       matrix:
         platform: [ ubuntu-latest, ubuntu-24.04-arm ]
         images: [ debian-bookworm, ubuntu-24.04 ]
-    runs-on: matrix.platform
+    runs-on: ${{ matrix.platform }} 
     steps:
       - name: Debug
         id: debug
