@@ -14,16 +14,29 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ ubuntu-latest, ubuntu-24.04-arm ]
+        platform-runs: [ ubuntu-latest, ubuntu-24.04-arm ]
         images: [ debian-bookworm, ubuntu-24.04 ]
-    runs-on: ${{ matrix.platform }} 
+    runs-on: ${{ matrix.platform-runs }} 
     steps:
       - name: Debug
         id: debug
         run : |
-          echo matrix.platform= ${{ matrix.platform }}
+          echo matrix.platform-run on ${{ matrix.platform-runs }}
           echo matrix.images= ${{ matrix.images }}
           echo env ARCH ${{ env.ARCH }}
+          MACHINE=$(uname --machine)
+          echo $MACHINE
+          if [ $MACHINE = 'x86_64' ]; then 
+             echo 'platform=linux/amd64'
+             echo 'platform=linux/amd64' >> $GITHUB_ENV
+          fi
+          if [ $MACHINE = 'arm_64' ]; then 
+             echo 'platform=linux/arm64'
+             echo 'platform=linux/arm64' >> $GITHUB_ENV
+          fi
+          source /etc/os_release
+          echo ${ID}/{VERSION_ID}
+          echo ${ID}/{VERSION_ID} >> $GITHUB_ENV
     
       - name: Prepare
         id: prepare
