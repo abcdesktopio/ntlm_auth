@@ -1,0 +1,90 @@
+name: ci-arm64-debian
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY_IMAGE: abcdesktopio/ntlm_auth_debian_bookworm
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        # images:
+        #  - image: debian
+        #    release: bookworm
+        #  - image: ubuntu
+        #    release: 24.04
+        #  - image: ubuntu
+        #    release: 22.04
+        #  - image: ubuntu
+        #    release: 20.04        
+        platform:
+          - linux/arm64
+    steps:
+      - name: Prepare
+        id: prepare
+        run: |
+          platform=${{ matrix.platform }}
+          echo platform is ${platform//\//-}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+          echo "CPU=${platform//*\//}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+
+      - name: Debug
+        id: debug
+        run : |
+           echo env CPU ${{ env.CPU }}
+           
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: https://ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          build-args: |
+            BASE_IMAGE=debian
+            TAG=bookworm
+          file: Dockerfile.debian
+          provenance: false
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}:${{ env.CPU }}
+          outputs: type=image,name-canonical=true,push=true
+          # outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: https://ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
