@@ -14,23 +14,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - ubuntu-latest
-            env: ARCH=linux/amd64
-          - ubuntu-24.04-arm
-            env: ARCH=linux/arm64
-        images:
-          - image: debian
-            release: bookworm
-          - image: ubuntu
-            release: 20.04
-          - image: ubuntu
-            release: 22.04
-          - image: ubuntu
-            release: 24.04
-       runs-on: matrix.platform
+        platform: [ ubuntu-latest, ubuntu-24.04-arm ]
+        images: [ debian-bookworm, ubuntu-24.04 ]
+    runs-on: matrix.platform.image
     steps:
-
       - name: Debug
         id: debug
         run : |
