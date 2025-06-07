@@ -73,7 +73,8 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ghcr.io/${{ env.REGISTRY_IMAGE }}:${{ env.CPU }}
-          outputs: type=image,name-canonical=true,push=true
+          # outputs: type=image,name-canonical=true,push=true
+          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
 
   merge:
     runs-on: ubuntu-latest
