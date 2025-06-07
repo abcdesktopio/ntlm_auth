@@ -41,9 +41,7 @@ jobs:
       - name: Debug
         id: debug
         run : |
-           echo CPU ${CPU} 
            echo env CPU ${{ env.CPU }}
-           echo matrix ${matrix.platform//*\//}
            
       - name: Docker meta
         id: meta
@@ -74,7 +72,7 @@ jobs:
           file: Dockerfile.debian
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
-          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}:${matrix.platform//*\//}
+          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}:${{ env.CPU }}
           outputs: type=image,name-canonical=true,push=true
 
   merge:
