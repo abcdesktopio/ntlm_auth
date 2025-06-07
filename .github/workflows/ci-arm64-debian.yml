@@ -18,8 +18,8 @@ jobs:
         images: [ debian-bookworm, ubuntu-24.04 ]
     runs-on: ${{ matrix.platform-runs }} 
     steps:
-      - name: Debug
-        id: debug
+      - name: Prepare
+        id: prepare
         run : |
           echo matrix.platform-run on ${{ matrix.platform-runs }}
           echo matrix.images= ${{ matrix.images }}
@@ -36,17 +36,10 @@ jobs:
           fi
           cat /etc/os-release
           source /etc/os-release
-          echo ${ID}/{VERSION_ID}
-          echo ${ID}/{VERSION_ID} >> $GITHUB_ENV
+          echo "image=${ID}" >> ${GITHUB_ENV}
+          echo "release=${VERSION_ID}" >> ${GITHUB_ENV}
+          echo "imagerelease=${ID}/${VERSION_ID}" >> ${GITHUB_ENV}
     
-      - name: Prepare
-        id: prepare
-        run: |
-          platform=${{ matrix.platform }}
-          echo platform is ${platform//\//-}
-          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
-          echo "CPU=${platform//*\//}" >> $GITHUB_ENV
-
       - uses: actions/checkout@v3
            
       - name: Docker meta
