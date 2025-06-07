@@ -11,22 +11,33 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
-        # images:
-        #  - image: debian
-        #    release: bookworm
-        #  - image: ubuntu
-        #    release: 24.04
-        #  - image: ubuntu
-        #    release: 22.04
-        #  - image: ubuntu
-        #    release: 20.04        
         platform:
-          - linux/arm64
+          - ubuntu-latest
+            env: ARCH=linux/amd64
+          - ubuntu-24.04-arm
+            env: ARCH=linux/arm64
+        images:
+          - image: debian
+            release: bookworm
+          - image: ubuntu
+            release: 20.04
+          - image: ubuntu
+            release: 22.04
+          - image: ubuntu
+            release: 24.04
+       runs-on: matrix.platform
     steps:
+
+      - name: Debug
+        id: debug
+        run : |
+          echo matrix.platform= ${{ matrix.platform }}
+          echo matrix.images= ${{ matrix.images }}
+          echo env ARCH ${{ env.ARCH }}
+    
       - name: Prepare
         id: prepare
         run: |
@@ -36,11 +47,6 @@ jobs:
           echo "CPU=${platform//*\//}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
-
-      - name: Debug
-        id: debug
-        run : |
-           echo env CPU ${{ env.CPU }}
            
       - name: Docker meta
         id: meta
