@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         platform-runs: [ ubuntu-latest, ubuntu-24.04-arm ]
-        images: [ debian-bookworm, ubuntu-24.04 ]
+        images: [ debian_bookworm, ubuntu_24.04 ]
     runs-on: ${{ matrix.platform-runs }} 
     steps:
       - name: Prepare
@@ -25,10 +25,10 @@ jobs:
           # dump values for debug 
           echo matrix.platform-run on ${{ matrix.platform-runs }}
           echo matrix.images= ${{ matrix.images }}
-          # parse images debian-bookworm -> IMAGE=debian and RELEASE=bookworm
-          # parse images ubuntu-24.04 -> IMAGE=ubuntu and RELEASE=24.04
-          echo ${{ matrix.images }} | awk -F "-" '{print "IMAGE="$1}' >> ${GITHUB_ENV}
-          echo ${{ matrix.images }} | awk -F "-" '{print "RELEASE="$2}' >> ${GITHUB_ENV}
+          # parse images debian_bookworm -> IMAGE=debian and RELEASE=bookworm
+          # parse images ubuntu_24.04 -> IMAGE=ubuntu and RELEASE=24.04
+          echo ${{ matrix.images }} | awk -F "_" '{print "IMAGE="$1}' >> ${GITHUB_ENV}
+          echo ${{ matrix.images }} | awk -F "_" '{print "RELEASE="$2}' >> ${GITHUB_ENV}
           # read uname --machine to know the type of cpu amd64 or arm64
           # create env OS_PLATFORM=linux/amd64 and PLATFORM=amd64
           # create env OS_PLATFORM=linux/arm64 and PLATFORM=arm64
@@ -75,7 +75,7 @@ jobs:
           provenance: false
           platforms: ${{ env.OS_PLATFORM }}
           labels: ${{ steps.meta.outputs.labels }}
-          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}.${{ env.IMAGE }}.${{ env.RELEASE }}:${{ env.PLATFORM }}
+          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}_${{ env.IMAGE }}_${{ env.RELEASE }}:${{ env.PLATFORM }}
           outputs: type=image,name-canonical=true,push=true
           # outputs: type=image,push-by-digest=true,name-canonical=true,push=true
 
@@ -86,7 +86,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        images: [ debian-bookworm, ubuntu-24.04 ]
+        images: [ debian_bookworm, ubuntu_24.04 ]
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -97,7 +97,7 @@ jobs:
       - name: merge
         uses: int128/docker-manifest-create-action@v2
         with:
-          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}.${{ matrix.images }}:main
+          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}_${{ matrix.images }}:main
           sources: |
-            ghcr.io/${{ env.REGISTRY_IMAGE }}.${{ matrix.images }}:arm64
-            ghcr.io/${{ env.REGISTRY_IMAGE }}.${{ matrix.images }}:amd64
+            ghcr.io/${{ env.REGISTRY_IMAGE }}_${{ matrix.images }}:arm64
+            ghcr.io/${{ env.REGISTRY_IMAGE }}_${{ matrix.images }}:amd64
