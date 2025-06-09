@@ -27,8 +27,8 @@ jobs:
           echo matrix.images= ${{ matrix.images }}
           # parse images debian-bookworm -> IMAGE=debian and RELEASE=bookworm
           # parse images ubuntu-24.04 -> IMAGE=ubuntu and RELEASE=24.04
-          echo ${{ matrix.images }} | awk -F "-" 'IMAGE={print $1}' >> ${GITHUB_ENV}
-          echo ${{ matrix.images }} | awk -F "-" 'RELEASE={print $2}' >> ${GITHUB_ENV}
+          echo ${{ matrix.images }} | awk -F "-" '{print "IMAGE="$1}' >> ${GITHUB_ENV}
+          echo ${{ matrix.images }} | awk -F "-" '{print "RELEASE"=$2}' >> ${GITHUB_ENV}
           # read uname --machine to know the type of cpu amd64 or arm64
           # create env OS_PLATFORM=linux/amd64 and PLATFORM=amd64
           # create env OS_PLATFORM=linux/arm64 and PLATFORM=arm64
