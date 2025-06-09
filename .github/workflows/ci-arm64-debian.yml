@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  REGISTRY_IMAGE: abcdesktopio/ntlm_auth_debian_bookworm
+  REGISTRY_IMAGE: abcdesktopio/ntlm_auth
 
 jobs:
   build:
@@ -21,25 +21,28 @@ jobs:
       - name: Prepare
         id: prepare
         run : |
+          # this instance is running on ubuntu-latest or ubuntu-24.04-arm
+          # dump values for debug 
           echo matrix.platform-run on ${{ matrix.platform-runs }}
           echo matrix.images= ${{ matrix.images }}
-          echo env ARCH ${{ env.ARCH }}
+          # parse images debian-bookworm -> IMAGE=debian and RELEASE=bookworm
+          # parse images ubuntu-24.04 -> IMAGE=ubuntu and RELEASE=24.04
+          echo ${{ matrix.images }} | awk -F "-" 'IMAGE={print $1}' >> ${GITHUB_ENV}
+          echo ${{ matrix.images }} | awk -F "-" 'RELEASE={print $2}' >> ${GITHUB_ENV}
+          # read uname --machine to know the type of cpu amd64 or arm64
+          # create env OS_PLATFORM=linux/amd64 and PLATFORM=amd64
+          # create env OS_PLATFORM=linux/arm64 and PLATFORM=arm64
           MACHINE=$(uname --machine)
           echo $MACHINE
           if [ $MACHINE = 'x86_64' ]; then 
-             echo 'platform=linux/amd64'
-             echo 'platform=linux/amd64' >> ${GITHUB_ENV}
+             echo 'OS_PLATFORM=linux/amd64' >> ${GITHUB_ENV}
+             echo 'PLATFORM=amd64' >> ${GITHUB_ENV}
           fi
           if [ $MACHINE = 'aarch64' ]; then 
-             echo 'platform=linux/arm64'
-             echo 'platform=linux/arm64' >> ${GITHUB_ENV}
+             echo 'OS_PLATFORM=linux/arm64' >> ${GITHUB_ENV}
+             echo 'PLATFORM=arm64' >> ${GITHUB_ENV}
           fi
-          cat /etc/os-release
-          source /etc/os-release
-          echo "image=${ID}" >> ${GITHUB_ENV}
-          echo "release=${VERSION_ID}" >> ${GITHUB_ENV}
-          echo "imagerelease=${ID}/${VERSION_ID}" >> ${GITHUB_ENV}
-    
+          
       - uses: actions/checkout@v3
            
       - name: Docker meta
@@ -66,13 +69,13 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           build-args: |
-            BASE_IMAGE=debian
-            TAG=bookworm
-          file: Dockerfile.debian
+            BASE_IMAGE=${{ env.IMAGE }}
+            TAG=${{ env.RELEASE }}
+          file: Dockerfile.${{ env.IMAGE }}
           provenance: false
-          platforms: ${{ matrix.platform }}
+          platforms: ${{ env.OS_PLATFORM }}
           labels: ${{ steps.meta.outputs.labels }}
-          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}:${{ env.CPU }}
+          tags: ghcr.io/${{ env.REGISTRY_IMAGE }}.${{ env.IMAGE }}.${{ env.RELEASE }}:${{ env.PLATFORM }}
           outputs: type=image,name-canonical=true,push=true
           # outputs: type=image,push-by-digest=true,name-canonical=true,push=true
 
