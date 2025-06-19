@@ -16,7 +16,9 @@ jobs:
       matrix:
         # only platform to build, not the image target 
         platform-runs: [ ubuntu-latest, ubuntu-24.04-arm ]
-        distribs: [ debian_bookworm, ubuntu_24.04, alpine_edge ]
+        # this is the target build 
+        # ntlm_auth 
+        distribs: [ debian_bookworm, ubuntu_24.04, alpine_edge, alpine_3.22 ]
     runs-on: ${{ matrix.platform-runs }} 
     steps:
       - name: Prepare
