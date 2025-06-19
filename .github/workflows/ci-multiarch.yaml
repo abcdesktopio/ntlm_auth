@@ -101,8 +101,10 @@ jobs:
         uses: int128/docker-manifest-create-action@v2
         with:
           # image format ntlm_auth:$distrib_$release
-          # abcdesktopio/ntlm_auth:debian_bookworm
-          # abcdesktopio/ntlm_auth:ubuntu_24.04
+          # amd64 and arm64
+          # ghcr.io/abcdesktopio/ntlm_auth:debian_bookworm
+          # ghcr.io/abcdesktopio/ntlm_auth:ubuntu_24.04
+          # ghcr.io/abcdesktopio/ntlm_auth:alpine_3.22
           tags: ghcr.io/${{ env.REGISTRY_IMAGE }}:${{ matrix.distribs }}
           sources: |
             ghcr.io/${{ env.REGISTRY_IMAGE }}_${{ matrix.distribs }}:arm64
