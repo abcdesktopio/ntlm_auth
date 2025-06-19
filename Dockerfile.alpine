@@ -11,7 +11,7 @@ ARG BASE_IMAGE_RELEASE
 # deb files will be located in /root/packages/$(uname -m) directory 
 # patched with openbox.title.patch for abcdesktop
 FROM ${BASE_IMAGE}:${TAG}
-RUN apk --update add alpine-sdk bash samba doas make
+RUN apk --update add alpine-sdk bash samba doas make patch
 # edge is the master ( default) branch 
 # try to git clone --branch v$(grep VERSION /etc/os-release | awk -F '=' '{print $2}') 
 # if failed use default branch because 
@@ -26,7 +26,7 @@ RUN cd /aports/main/samba/ && abuild -F -K
 
 COPY ntlm_auth.abcdesktop.patch /
 RUN ls -la /aports/main/samba/src/
-RUN cd /aports/main/samba/src/samba-*/source3/utils && patch ntlm_auth.c /ntlm_auth.abcdesktop.patch
+RUN cd /aports/main/samba/src/samba-*/source3/utils && patch ntlm_auth.c /ntlm_auth.abcdesktop.patch ||true
 RUN cd /aports/main/samba/src/samba-* && make
 # create dist directory
 RUN mkdir -p /dist/bin /dist/lib
