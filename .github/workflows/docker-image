@@ -1,0 +1,54 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  job1:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+    - id: set-matrix
+      run: echo "::set-output name=matrix::{  \"images\":[ {\"image\":\"debian\",\"tag\":\"bookworm\"}, {\"image\":\"ubuntu\",\"tag\":\"20.04\"}, {\"image\":\"ubuntu\",\"tag\":\"22.04\"}, {\"image\":\"ubuntu\",\"tag\":\"24.04\"}  ]}"
+      # linux/amd64,linux/arm64
+      # run: echo "::set-output name=matrix::{ \"plateforms\":[ \"linux/arm64\", \"linux/amd64\" ],  \"images\":[ {\"image\":\"alpine\",\"tag\":\"latest\"}, {\"image\":\"ubuntu\",\"tag\":\"20.04\"}, {\"image\":\"ubuntu\",\"tag\":\"22.04\"} ]}"
+  job2:
+    needs: job1
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        ${{fromJson(needs.job1.outputs.matrix)}}
+    steps:
+    # - run: echo matrix.plateforms ${{ matrix.plateforms }}
+    - run: echo matrix.images.image ${{ matrix.images.image }}
+    - uses: actions/checkout@v3
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        registry: https://ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - uses: docker/metadata-action@v4
+      id: metadata
+      with:
+          images: abcdesktopio/ntlm_auth:${{ matrix.images.image }}.${{ matrix.images.tag }}
+    - name: Build and push ntlm_auth
+      uses: docker/build-push-action@v4
+      with:
+          platforms: linux/amd64, linux/arm64
+          context: .
+          build-args: |
+            TAG=${{ matrix.images.tag }}
+            BASE_IMAGE=${{ matrix.images.image }}
+          file: Dockerfile.${{ matrix.images.image }}
+          push: true
+          tags: |
+            ghcr.io/abcdesktopio/ntlm_auth:${{ matrix.images.image }}.${{ matrix.images.tag }}
