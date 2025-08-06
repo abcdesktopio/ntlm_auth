@@ -5,7 +5,7 @@
 
 `ntlm_auth.abcdesktop.path` is a patch to add sso using file credentials to ntlm_auth binary.
 
-`ntlm_auth` is used by firefox to get credentials
+`ntlm_auth` is used by firefox to get credentials from kubernetes secrets 
 
 This patch uses a ramdom key NTLM_KEY and a hard coded key.
 You must change the hard coded key value then you build ntlm_auth.c
