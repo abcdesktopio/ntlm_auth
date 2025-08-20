@@ -50,7 +50,11 @@ RUN cd /samba/samba-*dfsg && debuild -us -uc
 # RUN cd /samba/samba-*dfsg && make
 # COPY all deb file except dev to dist 
 RUN mkdir /dist
-RUN cp $(ls -a *.deb |grep -v dev) /dist
+# no need package file 
+# - dbgsym
+# - testsuite
+# - dev
+RUN cp $(ls -a *.deb |grep -v dbgsym |grep -v testsuite |grep -v dev) /dist
 
 
 
